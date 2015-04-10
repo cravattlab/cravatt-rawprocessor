@@ -7,6 +7,7 @@ import psutil
 import config
 import shelve
 import json
+from cors import crossdomain
 
 app = Flask(__name__)
 app.debug = True
@@ -15,6 +16,7 @@ app.config['PROPAGATE_EXCEPTIONS'] = True
 processes = {}
 
 @app.route('/')
+@crossdomain(origin='*')
 def index():
     return 'hello world'
 
@@ -33,7 +35,7 @@ def upload(path):
 
             readw_proc = psutil.Popen(['readw', '-c', item], stdout=PIPE)
             rawc_proc = psutil.Popen(
-                ['rawconverter', item, '--ms2', '--out_folder', rawconv_out ],
+                ['rawconverter', item, '--ms2', '--select_mono_prec', '--out_folder', rawconv_out ],
                 cwd=rawconv_path, stdout=PIPE
             )
 
@@ -71,7 +73,7 @@ def status(path):
                 except Exception:
                     pass
 
-        return json.dumps([ { k: v for k, v in x.items() if k != 'process' } for x in processes[path] ])
+        return json.dumps([ { k: v for k, v in x.items() if k != 'process' } for x in processes[path] ], sort_keys=True, indent=4, separators=(',', ': '))
     else:
         return '%s not found' % path
 
