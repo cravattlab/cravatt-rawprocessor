@@ -17,7 +17,7 @@ processes = {}
 @app.route('/')
 def index(): return ''
 
-@app.route('/convert/<path>')
+@app.route('/convert/<path:path>')
 @crossdomain(origin='*')
 def convert(path):
     # make sure we're not already running an operation for given path
@@ -36,7 +36,7 @@ def convert(path):
 
         readw_proc = psutil.Popen(['readw', '-c', item], stdout=PIPE)
         rawc_proc = psutil.Popen(
-            ['rawconverter', item, '--ms2', '--select_mono_prec', '--out_folder', rawconv_out ],
+            [ 'rawconverter', item, '--ms2', '--out_folder', rawconv_out ],
             cwd=rawconv_path, stdout=PIPE
         )
 
@@ -54,7 +54,7 @@ def convert(path):
 
     return success_response('Requested files are being converted')
 
-@app.route('/status/<path>')
+@app.route('/status/<path:path>')
 @crossdomain(origin='*')
 def status(path):
     if not path in processes: abort(404)
@@ -102,7 +102,7 @@ def status(path):
 
     return jsonify(result)
 
-@app.route('/abort/<path>')
+@app.route('/abort/<path:path>')
 @crossdomain(origin='*')
 def abort_conversion(path):
     if not path in processes: abort(404)
@@ -135,4 +135,4 @@ def conversion_running(error):
     return error_response('There is already a conversion operation running for the given path', 409)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', port=5001)
