@@ -36,7 +36,7 @@ def convert(path):
 
         readw_proc = psutil.Popen(['readw', '-c', item], stdout=PIPE)
         rawc_proc = psutil.Popen(
-            [ 'rawconverter', item, '--ms2', '--out_folder', rawconv_out ],
+            [ 'rawconverter', item, '--ms2', '--select_mono_prec', '--out_folder', rawconv_out ],
             cwd=rawconv_path, stdout=PIPE
         )
 
@@ -61,7 +61,9 @@ def status(path):
 
     result = {
         'progress': 0.0,
-        'status': 'running'
+        'status': 'running',
+        'files_converted': [],
+        'files_failed': []
     }
     
     for process in processes[path]:
@@ -71,11 +73,8 @@ def status(path):
 
         # when process is dead we read from stdout
         except psutil.NoSuchProcess:
-            result['progress'] = result['progress'] + 1
-
             try:
                 return_code = process['process'].poll()
-                # process['output'] = process['process'].communicate()[0]
                 if return_code == 0:
                     process['status'] = 'success'
                 else:
@@ -83,20 +82,17 @@ def status(path):
             # exception triggered when we try and poll a process we've already polled
             except Exception:
                 pass
-
-        if process['status'] == 'fail':
-            if 'fail' in result['status']:
-                result['status']['fail'].append(process['filename'])
-            else:
-                result['status'] = {
-                    'fail': [ process['filename'] ]
-                }
+        
+        if process['status'] == 'success':
+            result['files_converted'].append(process['filename'])
+        elif process['status'] == 'fail':
+            result['files_failed'].append(process['filename'])
 
     # crude estimator of progress
-    result['progress'] = round(result['progress']/len(processes[path]), 2) * 100
+    result['progress'] = round(float(len(result['files_converted']))/len(processes[path]), 2) * 100
 
     if result['progress'] == 100:
-        if not 'fail' in result['status']:
+        if not result['files_failed']:
             result['status'] = 'success'
         del processes[path]
 
